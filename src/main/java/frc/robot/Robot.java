@@ -7,7 +7,10 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
+import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
+import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.Timer;
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -15,10 +18,21 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends TimedRobot {
-  private static final String kDefaultAuto = "Default";
-  private static final String kCustomAuto = "My Auto";
+  private static final String kDefaultAuto = "Default"; // go across line only
+  private static final String kSpeakerMiddle = "Speaker Middle and Backup";
+  private static final String kRedLongAuto = "Red Long Speaker and Backup";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
+  private final PWMSparkMax leftRear = new PWMSparkMax(1);
+  private final PWMSparkMax leftFront = new PWMSparkMax(2);
+  private final PWMSparkMax rightRear = new PWMSparkMax(3);
+  private final PWMSparkMax rightFront = new PWMSparkMax(4);
+  private final PWMSparkMax feedWheel = new PWMSparkMax(5);
+  private final PWMSparkMax launchWheel = new PWMSparkMax(6);
+  private final MotorControllerGroup leftMotorGroup = new MotorControllerGroup(leftFront,leftRear);
+  private final MotorControllerGroup rightMotorGroup = new MotorControllerGroup(leftFront,leftRear);
+  private final DifferentialDrive iDrive = new DifferentialDrive(leftMotorGroup, rightMotorGroup);
+  private final Timer timeSecretary = new Timer();
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -26,9 +40,15 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
-    m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
-    m_chooser.addOption("My Auto", kCustomAuto);
-    SmartDashboard.putData("Auto choices", m_chooser);
+    m_chooser.setDefaultOption("Default", kDefaultAuto);
+    m_chooser.addOption("Speaker Middle and Backup", kSpeakerMiddle);
+    m_chooser.addOption("Red Long Speaker and Backup", kRedLongAuto);
+    SmartDashboard.putData("Auto Choices", m_chooser);
+    leftMotorGroup.setInverted(true);
+    rightMotorGroup.setInverted(false); // intentional redundancy
+    feedWheel.setInverted(true);
+    launchWheel.setInverted(true);
+    timeSecretary.start();
   }
 
   /**
@@ -56,18 +76,79 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
+    timeSecretary.reset();
   }
 
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
     switch (m_autoSelected) {
-      case kCustomAuto:
-        // Put custom auto code here
+      case kRedLongAuto:
+        double redLongMovement1End = 3;
+        double redLongMovement2End = redLongMovement1End + 2;
+        double redLongMovement3End = redLongMovement2End + 1.5;
+        double redLongMovement4End = redLongMovement3End + 1;
+        double redLongMovement5End = redLongMovement4End + 2;
+        if (timeSecretary.get() < redLongMovement1End) { // spool up the launch wheel
+          iDrive.tankDrive(0,0); // intentional redundancy
+          launchWheel.set(1);
+          feedWheel.set(0);
+        } else if (timeSecretary.get() < redLongMovement2End) { // turn on feed wheel to launch the note
+          launchWheel.set(1);
+          feedWheel.set(1);
+        } else if (timeSecretary.get() < redLongMovement3End) {
+          launchWheel.set(0);
+          feedWheel.set(0);
+          iDrive.tankDrive(-.5, -.5);
+        } else if (timeSecretary.get() < redLongMovement4End) {
+          launchWheel.set(0);
+          feedWheel.set(0);
+          iDrive.tankDrive(.4, -.4);
+        } else if (timeSecretary.get() < redLongMovement5End) {
+          iDrive.tankDrive(-.5, -.5);
+        } else { // turn off all motors
+          launchWheel.set(0);
+          feedWheel.set(0);
+          iDrive.tankDrive(0,0);
+        }
+        break;
+      case kSpeakerMiddle: // start middle speaker launch then backup
+        double speakerMiddleMovement1End = 3;
+        double speakerMiddleMovement2End = speakerMiddleMovement1End + 2;
+        double speakerMiddleMovement3End = speakerMiddleMovement2End + 1.5;
+        /* The above variables are temporary.
+        Basically, every time you want something to continue for a set amount of time,
+        you need to sum up the time it took for all previous actions to occur,
+        and then add the time you want for the current action to occur.
+        An Array or ArrayList will eventually replace these variables
+        (and every other "movementEnd" variable for that matter)
+        so that there can just be one method
+        that takes the action number as an input
+        and returns the sum of all the elements in the array until reaching the desired action time. */
+        if (timeSecretary.get() < speakerMiddleMovement1End) { // spool up the launch wheel
+          iDrive.tankDrive(0,0); // intentional redundancy
+          launchWheel.set(1);
+        } else if (timeSecretary.get() < speakerMiddleMovement2End) { // turn on feed wheel to launch the note
+          launchWheel.set(1);
+          feedWheel.set(1);
+        } else if (timeSecretary.get() < speakerMiddleMovement3End) {
+          launchWheel.set(0);
+          feedWheel.set(0);
+          iDrive.tankDrive(-.5, -.5);
+        } else { // turn off all motors
+          launchWheel.set(0);
+          feedWheel.set(0);
+          iDrive.tankDrive(0,0);
+        }
         break;
       case kDefaultAuto:
-      default:
-        // Put default auto code here
+      default: // just crossing the line for points
+        double defaultMovement1End = 1.5;
+        if (timeSecretary.get() < defaultMovement1End) {
+          iDrive.tankDrive(-.5, -.5);
+        } else {
+          iDrive.tankDrive(0,0);
+        }
         break;
     }
   }
