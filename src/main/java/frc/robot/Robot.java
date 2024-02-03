@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.XboxController;
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -30,9 +31,14 @@ public class Robot extends TimedRobot {
   private final PWMSparkMax feedWheel = new PWMSparkMax(5);
   private final PWMSparkMax launchWheel = new PWMSparkMax(6);
   private final MotorControllerGroup leftMotorGroup = new MotorControllerGroup(leftFront,leftRear);
-  private final MotorControllerGroup rightMotorGroup = new MotorControllerGroup(leftFront,leftRear);
+  private final MotorControllerGroup rightMotorGroup = new MotorControllerGroup(rightFront,rightRear);
   private final DifferentialDrive iDrive = new DifferentialDrive(leftMotorGroup, rightMotorGroup);
   private final Timer timeSecretary = new Timer();
+  private final XboxController driverController = new XboxController(0);
+  private final XboxController operatorController = new XboxController(1);
+  double driveLimit = 1;
+  double launchPower = 0;
+  double feedPower = 0;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -159,7 +165,40 @@ public class Robot extends TimedRobot {
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+    if (driverController.getLeftBumper()) {
+      // if (driveLimit > .1) {driveLimit -= .1;}
+      driveLimit = .5;
+    } else if (driverController.getRightBumper()) {
+      // if (driveLimit < 1) {driveLimit += .1;}
+      driveLimit = 1;
+    }
+    // iDrive.tankDrive(-driveLimit*driverController.getLeftY(), -driveLimit*driverController.getRightY());
+    iDrive.arcadeDrive(-driveLimit*driverController.getLeftY(), -driveLimit*driverController.getRightX());
+    
+    // BORDER BETWEEN DRIVER CODE AND OPERATOR CODE
+
+    if (operatorController.getLeftBumper()) {
+      launchPower = -1;
+      feedPower = -.2;
+    } else {
+      if (operatorController.getAButtonPressed()) { // at the beginnng of the period, make sure no note is in the barel
+        timeSecretary.reset();
+      }
+      if (timeSecretary.get() < 1.0) {
+        launchPower = 1;
+        feedPower = 0; // intentional redundancy
+      } else if (timeSecretary.get() < 2.0) {
+        launchPower = 1;
+        feedPower = 1;
+      } else {
+        launchPower = 0;
+        feedPower = 0;
+      }
+    }
+    launchWheel.set(launchPower);
+    feedWheel.set(feedPower);
+  }
 
   /** This function is called once when the robot is disabled. */
   @Override
