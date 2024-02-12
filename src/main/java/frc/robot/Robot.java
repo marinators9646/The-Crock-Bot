@@ -7,11 +7,21 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+// CAN troubleshooting
+import edu.wpi.first.wpilibj.motorcontrol.MotorController;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.CANSparkLowLevel;
+import com.revrobotics.CANSparkMax;
+// Problematic Imports
+/* import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
+import static frc.robot.Constants.DrivetrainConstants.*;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.CANDrivetrain;
+import frc.robot.subsystems.CANLauncher; */
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -24,12 +34,12 @@ public class Robot extends TimedRobot {
   private static final String kRedLongAuto = "Red Long Speaker and Backup";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
-  private final PWMSparkMax leftRear = new PWMSparkMax(1);
-  private final PWMSparkMax leftFront = new PWMSparkMax(2);
-  private final PWMSparkMax rightRear = new PWMSparkMax(3);
-  private final PWMSparkMax rightFront = new PWMSparkMax(4);
-  private final PWMSparkMax feedWheel = new PWMSparkMax(5);
-  private final PWMSparkMax launchWheel = new PWMSparkMax(6);
+  private final CANSparkMax leftRear = new CANSparkMax(0, MotorType.kBrushed);
+  private final CANSparkMax leftFront = new CANSparkMax(1, MotorType.kBrushed);
+  private final CANSparkMax rightRear = new CANSparkMax(2, MotorType.kBrushed);
+  private final CANSparkMax rightFront = new CANSparkMax(3, MotorType.kBrushed);
+  private final CANSparkMax feedWheel = new CANSparkMax(4, MotorType.kBrushed);
+  private final CANSparkMax launchWheel = new CANSparkMax(5, MotorType.kBrushed);
   private final MotorControllerGroup leftMotorGroup = new MotorControllerGroup(leftFront,leftRear);
   private final MotorControllerGroup rightMotorGroup = new MotorControllerGroup(rightFront,rightRear);
   private final DifferentialDrive iDrive = new DifferentialDrive(leftMotorGroup, rightMotorGroup);
